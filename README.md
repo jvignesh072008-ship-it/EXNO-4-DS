@@ -24,6 +24,63 @@ The feature selection techniques used are:
 3.Embedded Method
 
 # CODING AND OUTPUT:
-       # INCLUDE YOUR CODING AND OUTPUT SCREENSHOTS HERE
-# RESULT:
-       # INCLUDE YOUR RESULT HERE
+
+```
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.feature_selection import SelectKBest, f_classif
+
+# STEP 1: Read the Data
+try:
+    df = pd.read_csv('bmi.csv')
+    print(f"Data loaded successfully: {df.shape[0]} rows, {df.shape[1]} columns")
+except FileNotFoundError:
+    print("Error: 'bmi.csv' file not found. Please check the file path.")
+    exit()
+
+# STEP 2: Clean the Data Set
+original_rows = df.shape[0]
+df_clean = df.dropna()
+dropped_rows = original_rows - df_clean.shape[0]
+print(f"Removed {dropped_rows} rows with missing values ({dropped_rows/original_rows:.1%} of data)")
+
+# STEP 3: Encode Categorical Features
+categorical_cols = df_clean.select_dtypes(include=['object']).columns
+for col in categorical_cols:
+    le = LabelEncoder()
+    df_clean[col] = le.fit_transform(df_clean[col])
+    print(f"Encoded categorical column: {col} → {len(le.classes_)} unique values")
+
+# STEP 4: Feature Scaling
+if 'Index' in df_clean.columns:
+    numeric_cols = [col for col in df_clean.columns if col != 'Index']
+    scaler = MinMaxScaler()
+    df_clean[numeric_cols] = scaler.fit_transform(df_clean[numeric_cols])
+    print(f"Scaled {len(numeric_cols)} numeric features to range [0,1]")
+else:
+    print("Warning: 'Index' column not found. Please check your data.")
+    exit()
+
+# STEP 5: Feature Selection
+X = df_clean.drop('Index', axis=1)
+y = df_clean['Index']
+selector = SelectKBest(score_func=f_classif, k=2)
+X_selected = selector.fit_transform(X, y)
+selected_columns = X.columns[selector.get_support(indices=True)]
+print(f"Selected top features: {', '.join(selected_columns)}")
+
+# Combine selected features with the target column
+df_selected = pd.concat([df_clean[selected_columns], y], axis=1)
+
+# STEP 6: Save the resulting data
+output_file = 'bmi_selected_scaled.csv'
+df_selected.to_csv(output_file, index=False)
+print(f"Saved processed data to '{output_file}' ({df_selected.shape[0]} rows, {df_selected.shape[1]} columns)")
+
+```
+
+# RESULT/OUTPUT:
+
+<img width="745" height="147" alt="Screenshot 2025-10-07 214504" src="https://github.com/user-attachments/assets/2d903c70-e533-471f-9afb-de278900b0bb" />
+
